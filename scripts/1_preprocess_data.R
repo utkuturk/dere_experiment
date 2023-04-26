@@ -7,6 +7,9 @@ source("0_scripts.R")
 path_questions <- "../data/Rgenerated/data_questions.feather"
 path_spr <- "../data/Rgenerated/data_spr.feather"
 path_contexts <- "../data/Rgenerated/data_contexts.feather"
+path_questions_filler <- "../data/Rgenerated/data_questions_filler.feather"
+path_spr_filler <- "../data/Rgenerated/data_spr_filler.feather"
+path_contexts_filler <- "../data/Rgenerated/data_contexts_filler.feather"
 path_results <- "../data/ibex/raw_results_apr24.csv"
 
 
@@ -143,11 +146,22 @@ ultrafast_rts <- anomalous_rts %>% subset(perc_anomalous_spr_rts > .1) %>% .$sub
 
 # Exclusion --------------------------------------------------------------------
 
-excluded_subjects <- c(low_practice_accuracy, ultrafast_rts, non_native_subjects)
+excluded_subjects <- c(as.character(low_practice_accuracy), ultrafast_rts, non_native_subjects) %>% unique()
 
 # exclude participants with low practice accuracy or too many anomalous RTs
-questions %<>% subset(!subject %in% excluded_subjects)
-spr %<>% subset(!subject %in% excluded_subjects)
+excl <- function(df, col, excl_list) {
+  noexcl = nrow(df)
+  df = df %>% subset(!get(col) %in% excl_list)
+  print(round((noexcl - nrow(df)) / noexcl, digits = 2))
+  df
+}
+
+questions %<>% excl(. , "subject", excluded_subjects)
+question_fillers %<>% excl(. , "subject", excluded_subjects)
+spr %<>% excl(. , "subject", excluded_subjects)
+spr_fillers %<>% excl(. , "subject", excluded_subjects)
+contexts %<>% excl(. , "subject", excluded_subjects)
+context_fillers %<>% excl(. , "subject", excluded_subjects)
 
 # Certain problematic items 
 # 9 = bir yunan adasi
@@ -155,20 +169,29 @@ spr %<>% subset(!subject %in% excluded_subjects)
 # 22 = bir bitki cayi
 # 16 = bir muzik ogretmeni
 # let's exclude these ones as well.
-spr %<>% subset( !(item_no %in% c(1, 9, 22, 16)))
+excluded_items <- c(1, 9, 22, 16)
 
-# this percentage is not correct.
-# because it includes stuff like practice, start of the experiment etc. 
-# correct way: get the by participant trial number,
-# multiply it with total excluded subject and divide it by total subject number.
-exclusion_percent <- (nrow(df_no_exclusion)-nrow(df))/nrow(df_no_exclusion)
+questions %<>% excl(. , "item_no", excluded_items)
+question_fillers %<>% excl(. , "item_no", excluded_items)
+spr %<>% excl(. , "item_no", excluded_items)
+spr_fillers %<>% excl(. , "item_no", excluded_items)
+contexts %<>% excl(. , "item_no", excluded_items)
+context_fillers %<>% excl(. , "item_no", excluded_items)
 
-percentage_weird_item_exclusion = round(4/24, digits = 2)
+
+p_subject_excl = 0.08 # output from excl() function
+
+p_item_excl = round(4/24, digits = 2)
 
 # Exclusion Stats --------------------------------------------------------------
 
 # Save -------------------------------------------------------------------------
 # save formatted and filtered RTs
 feather::write_feather(questions, path = path_questions)
+feather::write_feather(question_fillers, path = path_questions_filler)
+
 feather::write_feather(spr, path = path_spr)
+feather::write_feather(spr_fillers, path = path_spr_filler)
+
 feather::write_feather(contexts, path = path_contexts)
+feather::write_feather(context_fillers, path = path_contexts_filler)
