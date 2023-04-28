@@ -145,16 +145,14 @@ items$is_Evet %<>% as.logical()
 
 ## Merge this with other files
 questions %<>% merge(., items, by = c("item_no", "condition"))
-contexts %<>% merge(
-  ., 
-  select(questions, item_no, condition, answer, is_Evet),
-  by = c("item_no", "condition")
-)
-spr %<>% merge(
-  ., 
-  select(questions, item_no, condition, answer, is_Evet),
-  by = c("item_no", "condition")
-)
+contexts %<>% merge(., items, by = c("item_no", "condition"))
+spr %<>% merge(., items, by = c("item_no", "condition"))
+# add other details of questions
+q_to_merge <- questions %>% select(item_no, subject, condition, answer) 
+
+contexts %<>% merge(., q_to_merge, by = c("subject","item_no", "condition"))
+spr %<>% merge(., q_to_merge, by = c("subject", "item_no", "condition"))
+
 
 # FILLERS
 filler_items <- read_csv(path_fillers)
@@ -164,16 +162,13 @@ filler_items$is_Evet %<>% as.logical()
 
 ## Merge this with other files
 question_fillers %<>% merge(., filler_items, by = "item_no")
-context_fillers %<>% merge(
-  ., 
-  select(question_fillers, item_no, answer, is_Evet),
-  by = "item_no"
-)
-spr_fillers %<>% merge(
-  ., 
-  select(question_fillers, item_no, answer, is_Evet),
-  by = "item_no"
-)
+context_fillers %<>% merge(., filler_items, by = "item_no")
+spr_fillers %<>% merge(., filler_items, by = "item_no")
+
+qf_to_merge <- question_fillers %>% select(subject, item_no, answer)
+
+context_fillers %<>% merge(., qf_to_merge, by = c("item_no", "subject"))
+spr_fillers %<>% merge(., qf_to_merge, by = c("item_no", "subject"))
 
 # Encode expected responses -----------------------------------------------------
 
