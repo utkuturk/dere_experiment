@@ -1,16 +1,17 @@
 # Setup ------------------------------------------------------------------------
 library(tidyverse)
 library(magrittr)
+library(feather)
 library(janitor)
-source("0_scripts.R")
+source("./scripts/0_scripts.R")
 
-path_questions <- "../data/Rgenerated/data_questions.feather"
-path_spr <- "../data/Rgenerated/data_spr.feather"
-path_contexts <- "../data/Rgenerated/data_contexts.feather"
-path_questions_filler <- "../data/Rgenerated/data_questions_filler.feather"
-path_spr_filler <- "../data/Rgenerated/data_spr_filler.feather"
-path_contexts_filler <- "../data/Rgenerated/data_contexts_filler.feather"
-path_results <- "../data/ibex/raw_results_apr24.csv"
+path_questions <- "./data/Rgenerated/data_questions.feather"
+path_spr <- "./data/Rgenerated/data_spr.feather"
+path_contexts <- "./data/Rgenerated/data_contexts.feather"
+path_questions_filler <- "./data/Rgenerated/data_questions_filler.feather"
+path_spr_filler <- "./data/Rgenerated/data_spr_filler.feather"
+path_contexts_filler <- "./data/Rgenerated/data_contexts_filler.feather"
+path_results <- "./data/ibex/raw_results_apr24.csv"
 
 
 # Read data --------------------------------------------------------------------
@@ -178,12 +179,13 @@ spr_fillers %<>% excl(. , "item_no", excluded_items)
 contexts %<>% excl(. , "item_no", excluded_items)
 context_fillers %<>% excl(. , "item_no", excluded_items)
 
+# Exclusion Stats --------------------------------------------------------------
+
 
 p_subject_excl = 0.08 # output from excl() function
 
 p_item_excl = round(4/24, digits = 2)
 
-# Exclusion Stats --------------------------------------------------------------
 
 # Save -------------------------------------------------------------------------
 # save formatted and filtered RTs

@@ -64,3 +64,15 @@ se_cousineau <- function(df, n_conditions, subject, DV, group, is_proportion = N
                      .groups = "drop" )
 }
 
+# Function to calculate standard error.
+se <- function(x) {
+  return(sqrt(var(x,na.rm=TRUE)/length(na.omit(x))))
+}
+
+# Function to calculate binomial standard error.
+se.bin <- function(x){
+  n.success = sum(na.omit(x)) #x is coded as 1 (success) or 0 (failure), so number of successes is the sum of x = 1 
+  n         = length(na.omit(x))
+  p         = n.success / n
+  return(sqrt(p*(1-p)/n))
+}
