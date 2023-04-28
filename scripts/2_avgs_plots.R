@@ -5,21 +5,7 @@ library(ggplot2)
 source("./scripts/0_scripts.R")
 
 # Read files -------------------------------------------------------------------
-## get the files
-files <- list.files("./data/Rgenerated/", 
-                    pattern = "\\.feather$", 
-                    full.names = T)
-
-## form object names
-object_names <- files %>% basename(.) %>% 
-  tools::file_path_sans_ext(.) %>% 
-  gsub("data_", '', .)
-
-## read files and read them to environment
-lapply(files, 
-       read_feather) %>% 
-  setNames(object_names) %>%
-  list2env(envir=globalenv())
+read_feathers("./data/Rgenerated/")
 
 # Analysis: question responses -------------------------------------------------
 questions %<>% mutate(response_yes = case_when(answer == "2ndOne" ~ F, TRUE ~ T))

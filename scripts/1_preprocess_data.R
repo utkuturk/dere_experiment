@@ -12,6 +12,8 @@ path_questions_filler <- "./data/Rgenerated/data_questions_filler.feather"
 path_spr_filler <- "./data/Rgenerated/data_spr_filler.feather"
 path_contexts_filler <- "./data/Rgenerated/data_contexts_filler.feather"
 path_results <- "./data/ibex/raw_results_apr24.csv"
+path_items <- "./data/ibex/chunk_includes/experiment.csv"
+path_fillers <- "./data/ibex/chunk_includes/fillers.csv"
 
 
 # Read data --------------------------------------------------------------------
@@ -87,7 +89,6 @@ questions %<>% dplyr::rename( "answer"=word, "RT"=answer_rt)
 question_fillers <- questions %>% subset( is.na(condition) ) 
 questions %<>% subset( !is.na(condition) ) 
 
-
 # Contexts ---------------------------------------------------------------------
 contexts <- subset(df, penn_name == "Context")
 contexts %<>% subset(item_type != "practice")
@@ -96,7 +97,7 @@ contexts %<>% dplyr::rename("RT"=context_rt)
 context_fillers <- contexts %>% subset( is.na(condition) ) 
 contexts %<>% subset( !is.na(condition) ) 
 
-# DataFrame Transpoe -----------------------------------------------------------
+# DataFrame Transpose -----------------------------------------------------------
 # For some participants the order of words in the df is reversed.
 wrong_order_participants = spr %>% filter( (word_pos == 1 & lead(word_pos) == 2) ) %>% .$subject %>% unique()
 wrong_order_spr = spr %>% subset(subject %in% wrong_order_participants) 
@@ -132,6 +133,59 @@ spr %<>% mutate(
   word_labels = dplyr::coalesce(is_bir, n_p1, n_p2, n_m1, n_m2)
 ) %>% select(-is_bir, -n_p1, -n_p2, -n_m1, -n_m2)
 
+# Correct/Expected Answers -----------------------------------------------------
+# EXP ITEMS
+## baseline conditions had correct answers
+## other conditions had intended answers
+
+items <- read_csv(path_items)
+items %<>% select(ItemNo, Condition, is_Evet) %>%
+  rename(item_no = ItemNo, condition = Condition)
+items$is_Evet %<>% as.logical()
+
+## Merge this with other files
+questions %<>% merge(., items, by = c("item_no", "condition"))
+contexts %<>% merge(
+  ., 
+  select(questions, item_no, condition, answer, is_Evet),
+  by = c("item_no", "condition")
+)
+spr %<>% merge(
+  ., 
+  select(questions, item_no, condition, answer, is_Evet),
+  by = c("item_no", "condition")
+)
+
+# FILLERS
+filler_items <- read_csv(path_fillers)
+filler_items %<>% select(ItemNo, is_Evet) %>%
+  rename(item_no = ItemNo)
+filler_items$is_Evet %<>% as.logical()
+
+## Merge this with other files
+question_fillers %<>% merge(., filler_items, by = "item_no")
+context_fillers %<>% merge(
+  ., 
+  select(question_fillers, item_no, answer, is_Evet),
+  by = "item_no"
+)
+spr_fillers %<>% merge(
+  ., 
+  select(question_fillers, item_no, answer, is_Evet),
+  by = "item_no"
+)
+
+# Encode expected responses -----------------------------------------------------
+
+
+questions %<>% encode_expected()
+question_fillers %<>% encode_expected()
+spr %<>% encode_expected()
+spr_fillers %<>% encode_expected()
+contexts %<>% encode_expected()
+context_fillers %<>% encode_expected()
+
+
 
 # Anomalous RT -----------------------------------------------------------------
 
@@ -150,12 +204,7 @@ ultrafast_rts <- anomalous_rts %>% subset(perc_anomalous_spr_rts > .1) %>% .$sub
 excluded_subjects <- c(as.character(low_practice_accuracy), ultrafast_rts, non_native_subjects) %>% unique()
 
 # exclude participants with low practice accuracy or too many anomalous RTs
-excl <- function(df, col, excl_list) {
-  noexcl = nrow(df)
-  df = df %>% subset(!get(col) %in% excl_list)
-  print(round((noexcl - nrow(df)) / noexcl, digits = 2))
-  df
-}
+
 
 questions %<>% excl(. , "subject", excluded_subjects)
 question_fillers %<>% excl(. , "subject", excluded_subjects)

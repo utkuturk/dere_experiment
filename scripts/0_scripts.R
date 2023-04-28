@@ -29,6 +29,9 @@ read.pcibex <- function(filepath, auto.colnames=TRUE, fun.col=function(col,cols)
   }
 }
 
+################################################################################
+################################################################################
+################################################################################
 
 se_cousineau <- function(df, n_conditions, subject, DV, group, is_proportion = NULL)
 {
@@ -64,10 +67,18 @@ se_cousineau <- function(df, n_conditions, subject, DV, group, is_proportion = N
                      .groups = "drop" )
 }
 
+################################################################################
+################################################################################
+################################################################################
+
 # Function to calculate standard error.
 se <- function(x) {
   return(sqrt(var(x,na.rm=TRUE)/length(na.omit(x))))
 }
+
+################################################################################
+################################################################################
+################################################################################
 
 # Function to calculate binomial standard error.
 se.bin <- function(x){
@@ -75,4 +86,49 @@ se.bin <- function(x){
   n         = length(na.omit(x))
   p         = n.success / n
   return(sqrt(p*(1-p)/n))
+}
+
+################################################################################
+################################################################################
+################################################################################
+
+encode_expected <- function(df) {
+  df %>% mutate(is_expected = case_when(
+    answer == "2ndOne" & is_Evet == FALSE ~ TRUE,
+    answer == "1stOne" & is_Evet == TRUE ~ TRUE,
+    TRUE ~ FALSE
+  ))
+}
+
+################################################################################
+################################################################################
+################################################################################
+
+excl <- function(df, col, excl_list) {
+  noexcl = nrow(df)
+  df = df %>% subset(!get(col) %in% excl_list)
+  print(round((noexcl - nrow(df)) / noexcl, digits = 2))
+  df
+}
+
+################################################################################
+################################################################################
+################################################################################
+
+read_feathers <- function(path) {
+  ## get the files
+  files <- list.files(path, 
+                      pattern = "\\.feather$", 
+                      full.names = T)
+  
+  ## form object names
+  object_names <- files %>% basename(.) %>% 
+    tools::file_path_sans_ext(.) %>% 
+    gsub("data_", '', .)
+  
+  ## read files and read them to environment
+  lapply(files, 
+         read_feather) %>% 
+    setNames(object_names) %>%
+    list2env(envir=globalenv())
 }
