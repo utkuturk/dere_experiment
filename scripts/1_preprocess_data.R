@@ -11,7 +11,7 @@ path_contexts <- "./data/Rgenerated/data_contexts.feather"
 path_questions_filler <- "./data/Rgenerated/data_questions_filler.feather"
 path_spr_filler <- "./data/Rgenerated/data_spr_filler.feather"
 path_contexts_filler <- "./data/Rgenerated/data_contexts_filler.feather"
-path_results <- "./data/ibex/raw_results_apr24.csv"
+path_results <- "./data/ibex/raw_results_jun19.csv"
 path_items <- "./data/ibex/chunk_includes/experiment.csv"
 path_fillers <- "./data/ibex/chunk_includes/fillers.csv"
 
@@ -53,7 +53,14 @@ N_nonnative <- length(non_native_subjects)
 
 # Practice Accuracy ------------------------------------------------------------
 df_no_exclusion = df
-# do other exclusions based on practice
+# exclusion based on RTs
+df$answer_rt %<>% as.integer()
+long_q_RTs <- df %>% filter(answer_rt > 5999) %>% select(subject, item_no, answer_rt) %>% 
+  group_by(subject, item_no) %>% slice(1)
+
+df %<>% anti_join(., long_q_RTs, by = c("subject", "item_no"))
+
+# maybe exclusion on fillers?
 
 # get the answers to practice questions
 practice <- filter(df, (penn_name == "answer" & label == "practice"))
@@ -194,9 +201,23 @@ hist(anomalous_rts$perc_anomalous_spr_rts)
 
 ultrafast_rts <- anomalous_rts %>% subset(perc_anomalous_spr_rts > .1) %>% .$subject %>% as.character()
 
+## ANSWER RTs
+ultra_short_q_rt <- 50
+ultra_long_q_rt <- 5000
+questions$RT %<>% as.integer()
+
+anomalous_q_rts <- 
+questions %>% 
+  filter(RT > 5000) %>% 
+  group_by(subject) %>% summarise(times = n()) %>% 
+  filter(times >= 10) %>% .$subject %>% as.character()
+
 # Exclusion --------------------------------------------------------------------
 
-excluded_subjects <- c(as.character(low_practice_accuracy), ultrafast_rts, non_native_subjects) %>% unique()
+excluded_subjects <- c(as.character(low_practice_accuracy), 
+                       ultrafast_rts, 
+                       anomalous_q_rts,
+                       non_native_subjects) %>% unique()
 
 # exclude participants with low practice accuracy or too many anomalous RTs
 
@@ -241,3 +262,11 @@ feather::write_feather(spr_fillers, path = path_spr_filler)
 
 feather::write_feather(contexts, path = path_contexts)
 feather::write_feather(context_fillers, path = path_contexts_filler)
+
+# save files as a csv
+write.csv(questions, "./data/Rgenerated/questions.csv")
+write.csv(question_fillers, "./data/Rgenerated/question_fillers.csv")
+write.csv(spr, "./data/Rgenerated/spr.csv")
+write.csv(spr_fillers, "./data/Rgenerated/spr_fillers.csv")
+write.csv(contexts, "./data/Rgenerated/contexts.csv")
+write.csv(context_fillers, "./data/Rgenerated/context_fillers.csv")
